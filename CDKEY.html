@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>激活码生成工具</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- 引入CryptoJS用于哈希计算 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <!-- <link rel="stylesheet" href="styles.css"> -->
+    <!-- Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#6B7280',
+                        success: '#36D399',
+                        danger: '#F87272',
+                        neutral: '#F9FAFB',
+                        dark: '#1F2937'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-key text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-dark">激活码生成工具</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6">
+                    <li><a href="#" class="text-gray-600 hover:text-primary transition-custom">首页</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-primary transition-custom">文档</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-primary transition-custom">关于</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- 介绍卡片 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8 transform hover:scale-[1.01] transition-custom">
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark mb-4 flex items-center">
+                    <i class="fa fa-info-circle text-primary mr-2"></i>
+                    工具介绍
+                </h2>
+                <p class="text-gray-600 leading-relaxed">
+                    这是一个专业的激活码生成工具，用于为您的软件产品生成基于硬件ID的激活码。通过输入硬件ID和安全密钥，您可以生成唯一的激活码，确保软件授权的安全性和可控性。
+                </p>
+            </div>
+
+            <!-- 生成器卡片 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h2 class="text-[clamp(1.25rem,2vw,1.5rem)] font-bold text-dark mb-6 flex items-center">
+                    <i class="fa fa-cog text-primary mr-2"></i>
+                    激活码生成器
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 左侧：输入区域 -->
+                    <div class="space-y-6">
+                        <div>
+                            <label for="hardware-id" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fa fa-microchip mr-1"></i>硬件ID
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="hardware-id" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-custom" placeholder="请输入硬件ID">
+                                <button id="get-browser-id" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 rounded-md text-sm transition-custom">
+                                    <i class="fa fa-desktop mr-1"></i>获取浏览器ID
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <i class="fa fa-info-circle mr-1"></i>硬件ID是设备的唯一标识符，通常由CPU、主板等信息生成
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="secret-key" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fa fa-lock mr-1"></i>安全密钥
+                            </label>
+                            <input type="password" id="secret-key" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-custom" placeholder="请输入安全密钥">
+                            <p class="text-xs text-gray-500 mt-1">
+                                <i class="fa fa-info-circle mr-1"></i>安全密钥用于生成激活码，请妥善保管
+                            </p>
+                        </div>
+                        
+                        <div class="pt-2">
+                            <button id="generate-btn" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center">
+                                <i class="fa fa-magic mr-2"></i>
+                                生成激活码
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：结果区域 -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fa fa-key mr-1"></i>生成的激活码
+                            </label>
+                            <div class="relative">
+                                <textarea id="activation-code" rows="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-custom" placeholder="点击生成按钮后显示激活码" readonly></textarea>
+                                <button id="copy-btn" class="absolute right-2 top-2 bg-white hover:bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm border border-gray-200 transition-custom">
+                                    <i class="fa fa-copy mr-1"></i>复制
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <h3 class="font-medium text-gray-800 mb-2 flex items-center">
+                                <i class="fa fa-lightbulb-o text-yellow-500 mr-2"></i>使用提示
+                            </h3>
+                            <ul class="text-sm text-gray-600 space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fa fa-check-circle text-success mt-1 mr-2"></i>
+                                    <span>硬件ID和安全密钥必须与验证端一致</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-check-circle text-success mt-1 mr-2"></i>
+                                    <span>建议使用至少16位包含字母和数字的安全密钥</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-check-circle text-success mt-1 mr-2"></i>
+                                    <span>点击"获取浏览器ID"可生成基于当前浏览器的唯一标识</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 验证器卡片 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h2 class="text-[clamp(1.25rem,2vw,1.5rem)] font-bold text-dark mb-6 flex items-center">
+                    <i class="fa fa-shield text-primary mr-2"></i>
+                    激活码验证器
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 左侧：验证输入 -->
+                    <div class="space-y-6">
+                        <div>
+                            <label for="verify-hardware-id" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fa fa-microchip mr-1"></i>硬件ID
+                            </label>
+                            <input type="text" id="verify-hardware-id" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-custom" placeholder="请输入需要验证的硬件ID">
+                        </div>
+                        
+                        <div>
+                            <label for="verify-activation-code" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fa fa-key mr-1"></i>激活码
+                            </label>
+                            <input type="text" id="verify-activation-code" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-custom" placeholder="请输入需要验证的激活码">
+                        </div>
+                        
+                        <div>
+                            <label for="verify-secret-key" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fa fa-lock mr-1"></i>安全密钥
+                            </label>
+                            <input type="password" id="verify-secret-key" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-custom" placeholder="请输入生成激活码时使用的安全密钥">
+                        </div>
+                        
+                        <div class="pt-2">
+                            <button id="verify-btn" class="w-full bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center">
+                                <i class="fa fa-check-circle mr-2"></i>
+                                验证激活码
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：验证结果 -->
+                    <div>
+                        <div class="h-full bg-gray-50 rounded-lg border border-gray-200 p-6 flex flex-col justify-center items-center" id="verification-result">
+                            <div class="text-center">
+                                <div id="result-icon" class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-gray-200">
+                                    <i class="fa fa-info-circle text-gray-500 text-2xl"></i>
+                                </div>
+                                <h3 id="result-title" class="text-lg font-medium text-gray-700 mb-2">等待验证...</h3>
+                                <p id="result-message" class="text-gray-500">请输入硬件ID、激活码和安全密钥进行验证</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 算法说明卡片 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-[clamp(1.25rem,2vw,1.5rem)] font-bold text-dark mb-4 flex items-center">
+                    <i class="fa fa-code text-primary mr-2"></i>
+                    技术说明
+                </h2>
+                <div class="prose max-w-none">
+                    <p class="text-gray-600">
+                        本工具使用SHA-256哈希算法生成激活码，确保生成的激活码具有唯一性和不可预测性。生成过程如下：
+                    </p>
+                    <ol class="list-decimal pl-5 mt-2 text-gray-600 space-y-2">
+                        <li>获取设备的硬件ID（CPU、主板等信息）</li>
+                        <li>将硬件ID与安全密钥连接</li>
+                        <li>使用SHA-256算法计算连接后的字符串的哈希值</li>
+                        <li>取哈希值的前16个字符作为激活码</li>
+                    </ol>
+                    <p class="text-gray-600 mt-4">
+                        验证过程与此类似，通过比较计算出的激活码与输入的激活码是否一致来判断激活是否有效。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa fa-key text-primary"></i>
+                        <span class="font-bold">激活码生成工具</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-1">专业的软件授权解决方案</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition-custom">
+                        <i class="fa fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-custom">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-custom">
+                        <i class="fa fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400 text-sm">
+                &copy; 2025 激活码生成工具. 保留所有权利.
+            </div>
+        </div>
+    </footer>
+
+    <!-- 通知组件 -->
+    <div id="notification" class="fixed top-4 right-4 bg-white shadow-lg rounded-lg p-4 transform translate-x-full transition-all duration-300 z-50 flex items-center">
+        <div id="notification-icon" class="mr-3 w-6 h-6 rounded-full flex items-center justify-center">
+            <i class="fa fa-check text-white"></i>
+        </div>
+        <div>
+            <h4 id="notification-title" class="font-medium text-gray-800">操作成功</h4>
+            <p id="notification-message" class="text-sm text-gray-600">已复制到剪贴板</p>
+        </div>
+        <button onclick="hideNotification()" class="ml-4 text-gray-400 hover:text-gray-600">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>
+
+    <script>
+        // 生成浏览器指纹作为替代硬件ID
+        function generateBrowserId() {
+            const nav = window.navigator;
+            const screen = window.screen;
+            let guid = nav.mimeTypes.length;
+            guid += nav.userAgent.replace(/\D+/g, '');
+            guid += nav.plugins.length;
+            guid += screen.height || '';
+            guid += screen.width || '';
+            guid += screen.pixelDepth || '';
+            
+            // 使用SHA-256生成哈希
+            const hash = CryptoJS.SHA256(guid);
+            return hash.toString(CryptoJS.enc.Hex).substring(0, 32).toUpperCase();
+        }
+
+        // 生成激活码
+        function generateActivationCode(hardwareId, secretKey) {
+            if (!hardwareId || !secretKey) {
+                showNotification('错误', '请输入硬件ID和安全密钥', 'error');
+                return;
+            }
+            
+            // 使用SHA-256生成激活码
+            const data = hardwareId + secretKey;
+            const hash = CryptoJS.SHA256(data);
+            const activationCode = hash.toString(CryptoJS.enc.Hex).substring(0, 16).toUpperCase();
+            
+            document.getElementById('activation-code').value = activationCode;
+            showNotification('成功', '激活码生成成功', 'success');
+        }
+
+        // 验证激活码
+        function verifyActivationCode() {
+            const hardwareId = document.getElementById('verify-hardware-id').value;
+            const activationCode = document.getElementById('verify-activation-code').value;
+            const secretKey = document.getElementById('verify-secret-key').value;
+            
+            if (!hardwareId || !activationCode || !secretKey) {
+                showNotification('错误', '请填写所有验证信息', 'error');
+                setVerificationResult('error', '验证失败', '请填写所有必要信息');
+                return;
+            }
+            
+            // 计算预期的激活码
+            const data = hardwareId + secretKey;
+            const hash = CryptoJS.SHA256(data);
+            const expectedCode = hash.toString(CryptoJS.enc.Hex).substring(0, 16).toUpperCase();
+            
+            // 比较激活码
+            if (expectedCode === activationCode) {
+                setVerificationResult('success', '验证成功', '此激活码有效');
+                showNotification('成功', '激活码验证通过', 'success');
+            } else {
+                setVerificationResult('error', '验证失败', '激活码无效或已过期');
+                showNotification('失败', '激活码验证失败', 'error');
+            }
+        }
+
+        // 设置验证结果显示
+        function setVerificationResult(type, title, message) {
+            const resultElement = document.getElementById('verification-result');
+            const iconElement = document.getElementById('result-icon');
+            const titleElement = document.getElementById('result-title');
+            const messageElement = document.getElementById('result-message');
+            
+            // 移除之前的样式
+            iconElement.className = 'mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4';
+            
+            if (type === 'success') {
+                resultElement.className = 'h-full bg-green-50 rounded-lg border border-green-200 p-6 flex flex-col justify-center items-center';
+                iconElement.className += ' bg-green-100';
+                iconElement.innerHTML = '<i class="fa fa-check-circle text-green-500 text-2xl"></i>';
+                titleElement.className = 'text-lg font-medium text-green-700 mb-2';
+            } else if (type === 'error') {
+                resultElement.className = 'h-full bg-red-50 rounded-lg border border-red-200 p-6 flex flex-col justify-center items-center';
+                iconElement.className += ' bg-red-100';
+                iconElement.innerHTML = '<i class="fa fa-times-circle text-red-500 text-2xl"></i>';
+                titleElement.className = 'text-lg font-medium text-red-700 mb-2';
+            } else {
+                resultElement.className = 'h-full bg-gray-50 rounded-lg border border-gray-200 p-6 flex flex-col justify-center items-center';
+                iconElement.className += ' bg-gray-200';
+                iconElement.innerHTML = '<i class="fa fa-info-circle text-gray-500 text-2xl"></i>';
+                titleElement.className = 'text-lg font-medium text-gray-700 mb-2';
+            }
+            
+            titleElement.textContent = title;
+            messageElement.textContent = message;
+        }
+
+        // 显示通知
+        function showNotification(title, message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const notificationIcon = document.getElementById('notification-icon');
+            const notificationTitle = document.getElementById('notification-title');
+            const notificationMessage = document.getElementById('notification-message');
+            
+            // 设置通知内容
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
+            // 设置通知样式
+            notificationIcon.className = 'mr-3 w-6 h-6 rounded-full flex items-center justify-center';
+            
+            if (type === 'success') {
+                notificationIcon.className += ' bg-green-500';
+                notificationIcon.innerHTML = '<i class="fa fa-check text-white"></i>';
+            } else if (type === 'error') {
+                notificationIcon.className += ' bg-red-500';
+                notificationIcon.innerHTML = '<i class="fa fa-times text-white"></i>';
+            } else if (type === 'warning') {
+                notificationIcon.className += ' bg-yellow-500';
+                notificationIcon.innerHTML = '<i class="fa fa-exclamation text-white"></i>';
+            } else {
+                notificationIcon.className += ' bg-blue-500';
+                notificationIcon.innerHTML = '<i class="fa fa-info text-white"></i>';
+            }
+            
+            // 显示通知
+            notification.classList.remove('translate-x-full');
+            
+            // 3秒后自动隐藏
+            setTimeout(hideNotification, 3000);
+        }
+
+        // 隐藏通知
+        function hideNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.add('translate-x-full');
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard() {
+            const textToCopy = document.getElementById('activation-code').value;
+            if (!textToCopy) {
+                showNotification('错误', '没有可复制的激活码', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                    showNotification('成功', '已复制到剪贴板', 'success');
+                })
+                .catch(err => {
+                    showNotification('错误', '复制失败，请手动复制', 'error');
+                    console.error('复制失败: ', err);
+                });
+        }
+
+        // 页面加载后初始化事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 生成激活码按钮
+            document.getElementById('generate-btn').addEventListener('click', function() {
+                const hardwareId = document.getElementById('hardware-id').value;
+                const secretKey = document.getElementById('secret-key').value;
+                generateActivationCode(hardwareId, secretKey);
+            });
+            
+            // 获取浏览器ID按钮
+            document.getElementById('get-browser-id').addEventListener('click', function() {
+                const browserId = generateBrowserId();
+                document.getElementById('hardware-id').value = browserId;
+                document.getElementById('verify-hardware-id').value = browserId;
+                showNotification('成功', '已获取浏览器ID', 'success');
+            });
+            
+            // 复制按钮
+            document.getElementById('copy-btn').addEventListener('click', copyToClipboard);
+            
+            // 验证按钮
+            document.getElementById('verify-btn').addEventListener('click', verifyActivationCode);
+            
+            // 为输入框添加焦点效果
+            const inputs = document.querySelectorAll('input[type="text"], input[type="password"], textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.classList.add('ring-2', 'ring-primary/20');
+                });
+                input.addEventListener('blur', function() {
+                    this.classList.remove('ring-2', 'ring-primary/20');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
